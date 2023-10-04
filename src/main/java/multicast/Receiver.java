@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package multicast;
 
 import interfaces.ICallback;
@@ -12,10 +7,6 @@ import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
 
-/**
- *
- * @author erik0
- */
 public class Receiver {
     private final MulticastSocket socket;
     private final InetAddress groupAddress;

@@ -12,10 +12,6 @@ import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 
-/**
- *
- * @author erik0
- */
 public class Sender {
     private final DatagramSocket socket;
     private final InetAddress groupAddress;

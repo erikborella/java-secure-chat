@@ -131,15 +131,15 @@ public class InitialView extends javax.swing.JFrame {
     }//GEN-LAST:event_continueButtonActionPerformed
 
     private void createButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_createButtonActionPerformed
-//        KeyPair kp = RSAUtils.generateRSAKeyPair(2048);
-//        
-//        byte[] passphrae = RSAUtils.createPasspharese(this.passwordTextField.getPassword());
-//        
-//        String a = RSAUtils.createPrivateKeyPEM(kp.getPrivate(), passphrae);
-//        String d = RSAUtils.createPublicKeyPEM(kp.getPublic());
-//        
-//        boolean b = RSAUtils.saveToFile(usernameTextField.getText(), "private.pem", a);
-//        boolean c = RSAUtils.saveToFile(usernameTextField.getText(), "public.pem", d);
+        KeyPair kp = RSAUtils.generateRSAKeyPair(2048);;
+        
+        byte[] passphrae = RSAUtils.createPasspharese(this.passwordTextField.getPassword());
+        
+        String a = RSAUtils.createPrivateKeyPEM(kp.getPrivate(), passphrae);
+        String d = RSAUtils.createPublicKeyPEM(kp.getPublic());
+        
+        boolean b = RSAUtils.saveToFile(usernameTextField.getText(), "private.pem", a);
+        boolean c = RSAUtils.saveToFile(usernameTextField.getText(), "public.pem", d);
         
         byte[] pass2 = RSAUtils.createPasspharese(this.passwordTextField.getPassword());
         
