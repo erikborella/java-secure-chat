@@ -2,10 +2,9 @@ package crypto;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
-import java.io.IOException;
+import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.KeyFactory;
 import java.security.KeyPair;
@@ -13,7 +12,6 @@ import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.security.SecureRandom;
 import java.security.spec.KeySpec;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
@@ -43,10 +41,9 @@ public class RSAUtils {
         return null;
     }
     
-    
-    public static byte[] createPasspharese(char[] password) {
+    public static byte[] createPassphrase(char[] password) {
         try {
-            KeySpec spec = new PBEKeySpec(password, salt, 1000000, 256);
+            KeySpec spec = new PBEKeySpec(password, salt, 1000000, 256);;
             SecretKeyFactory keyFactory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
             
             byte[] key = keyFactory.generateSecret(spec).getEncoded();
@@ -91,7 +88,7 @@ public class RSAUtils {
                 "-----END PUBLIC KEY-----\n";
     }
     
-    public static PrivateKey readPrivateKeyFromPEM(String folderPath, String fileName, byte[] passphrase) {
+    public static PrivateKey readPrivateKeyFromFile(String folderPath, String fileName, byte[] passphrase) {
         File filePath = new File(folderPath, fileName);
 
         try (BufferedReader privateKeyReader = new BufferedReader(new FileReader(filePath))) {
@@ -113,14 +110,10 @@ public class RSAUtils {
             
             byte[] decryptedPrivateKey = cipher.doFinal(privateKeyBytes);
 
-            try {
-                KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-                PKCS8EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(decryptedPrivateKey);
-                return keyFactory.generatePrivate(privateKeySpec);
-            } catch (Exception e) {
-                e.printStackTrace();
-                return null;
-            }
+            KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+            PKCS8EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(decryptedPrivateKey);
+            return keyFactory.generatePrivate(privateKeySpec);
+
         } catch (Exception ex) {
             Logger.getLogger(RSAUtils.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -128,7 +121,7 @@ public class RSAUtils {
         return null;
     }
 
-    public static PublicKey readPublicKeyFromPEM(String folderPath, String fileName) {
+    public static PublicKey readPublicKeyFromFile(String folderPath, String fileName) {
         File filePath = new File(folderPath, fileName);
         
         try (BufferedReader publicKeyReader = new BufferedReader(new FileReader(filePath))) {
@@ -143,16 +136,29 @@ public class RSAUtils {
 
             byte[] publicKeyBytes = Base64.decodeBase64(publicKeyPEM.toString());
 
-            try {
-                KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-                X509EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(publicKeyBytes);
-                return keyFactory.generatePublic(publicKeySpec);
-            } catch (Exception e) {
-                e.printStackTrace();
-                return null;
-            }
+            KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+            X509EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(publicKeyBytes);
+            return keyFactory.generatePublic(publicKeySpec);
+
         } catch (Exception ex) {
             Logger.getLogger(RSAUtils.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+        return null;
+    }
+    
+    public static PublicKey getPublicKeyFromPEM(String pem) {
+        String publicKeyPEM = pem.split("\n")[1];
+        
+        byte[] publicKeyBytes = Base64.decodeBase64(publicKeyPEM);
+        
+        try {
+            KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+            X509EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(publicKeyBytes);
+            return keyFactory.generatePublic(publicKeySpec);
+        }
+        catch (Exception e) {
+            e.printStackTrace();
         }
         
         return null;
@@ -179,4 +185,34 @@ public class RSAUtils {
             
         return false;
     };
+    
+    public static String encrypt(PublicKey publicKey, String message) {
+        try {
+            Cipher cipher = Cipher.getInstance("RSA");
+            cipher.init(Cipher.ENCRYPT_MODE, publicKey);
+            
+            byte[] cryptedBytes = cipher.doFinal(message.getBytes());
+            return new String(Base64.encodeBase64(cryptedBytes));
+            
+        } catch (Exception ex) {
+            Logger.getLogger(RSAUtils.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+        return null;
+    }
+    
+    public static String decrypt(PrivateKey privateKey, String encryptedMessage) {
+        try {
+            Cipher cipher = Cipher.getInstance("RSA");
+            cipher.init(Cipher.DECRYPT_MODE, privateKey);
+            
+            byte[] messageBytes = cipher.doFinal(Base64.decodeBase64(encryptedMessage));
+            return new String(messageBytes);
+            
+        } catch (Exception ex) {
+            Logger.getLogger(RSAUtils.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+        return null;
+    }
 }

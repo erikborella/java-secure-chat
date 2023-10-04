@@ -5,6 +5,7 @@
  */
 package views;
 
+import crypto.RSAManager;
 import crypto.RSAUtils;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -15,6 +16,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
+import javax.swing.JDialog;
+import javax.swing.JOptionPane;
+import tcp.TCPClient;
 import utils.JsonableMessage;
 
 /**
@@ -23,6 +27,9 @@ import utils.JsonableMessage;
  */
 public class InitialView extends javax.swing.JFrame {
 
+    private final String KEY_SERVER_ADDRESS = "127.0.0.1";
+    private final int KEY_SERVER_PORT = 6969;
+    
     /**
      * Creates new form InitialView
      */
@@ -122,31 +129,56 @@ public class InitialView extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
     
     private void continueButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_continueButtonActionPerformed
-        String username = usernameTextField.getText();
+        String id = this.usernameTextField.getText();
+        char[] password = this.passwordTextField.getPassword();
         
-        ChatView chatView = new ChatView(username);
+        KeyPair pemKeyPair = RSAManager.loadPEM(id, password);
         
-        this.dispose();
-        chatView.setVisible(true);
+        if (pemKeyPair == null) {
+            JOptionPane.showConfirmDialog(
+                this,
+                "Login invalido ou o cliente não foi criado",
+                "Erro",
+                JOptionPane.CANCEL_OPTION,
+                JOptionPane.DEFAULT_OPTION
+            );
+            return;
+        }
+        
+        this.initChatView(pemKeyPair);
+
+//        String username = usernameTextField.getText();
+//        
+//        ChatView chatView = new ChatView(username);
+//        
+//        this.dispose();
+//        chatView.setVisible(true);
     }//GEN-LAST:event_continueButtonActionPerformed
 
     private void createButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_createButtonActionPerformed
-        KeyPair kp = RSAUtils.generateRSAKeyPair(2048);;
+        String id = this.usernameTextField.getText();
+        char[] password = this.passwordTextField.getPassword();
         
-        byte[] passphrae = RSAUtils.createPasspharese(this.passwordTextField.getPassword());
+        KeyPair pemKeyPair = RSAManager.createNewPEM(id, password);
         
-        String a = RSAUtils.createPrivateKeyPEM(kp.getPrivate(), passphrae);
-        String d = RSAUtils.createPublicKeyPEM(kp.getPublic());
-        
-        boolean b = RSAUtils.saveToFile(usernameTextField.getText(), "private.pem", a);
-        boolean c = RSAUtils.saveToFile(usernameTextField.getText(), "public.pem", d);
-        
-        byte[] pass2 = RSAUtils.createPasspharese(this.passwordTextField.getPassword());
-        
-        PrivateKey ll = RSAUtils.readPrivateKeyFromPEM(usernameTextField.getText(), "private.pem", pass2);
-        System.out.println(ll);
+        this.initChatView(pemKeyPair);
     }//GEN-LAST:event_createButtonActionPerformed
 
+    private void initChatView(KeyPair pemKeyPair) {
+        this.getMulticastInfo(pemKeyPair);
+    }
+    
+    private void getMulticastInfo(KeyPair pemKeyPair) {
+        TCPClient client = new TCPClient(KEY_SERVER_ADDRESS, KEY_SERVER_PORT);
+        String message = RSAUtils.createPublicKeyPEM(pemKeyPair.getPublic());
+        
+        String encResponse = client.send(message);
+        System.out.println(encResponse);
+        
+        String m = RSAUtils.decrypt(pemKeyPair.getPrivate(), encResponse);
+        System.out.println(m);
+    }
+    
     /**
      * @param args the command line arguments
      */
