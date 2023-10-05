@@ -1,27 +1,34 @@
 package crypto;
 
-import java.security.InvalidKeyException;
-import java.security.Key;
+import javax.crypto.Cipher;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
+import java.security.spec.AlgorithmParameterSpec;
 import java.security.spec.KeySpec;
+import java.util.Base64;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.crypto.Cipher;
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
-import javax.crypto.spec.SecretKeySpec;
-import org.apache.commons.codec.binary.Base64;
 
 public class AESUtils {
-    private final static byte[] salt = new byte[]{
+    private static final String AES_ALGORITHM = "AES";
+    private static final String AES_TRANSFORMATION = "AES/CBC/PKCS5Padding";    
+    private static final String SECRET_KEY_ALGORITHM = "PBKDF2WithHmacSHA1";
+    
+    private final static byte[] IV = new byte[] {
+        10, -84, -100, -72, 40, 56, 91, 96, 36, -100, 56, 101, 82, 27, 85, -105
+    };
+    
+    private final static byte[] SALT = new byte[]{
         86, -80, -100, -74, 30, -55, 91, 96, -76, -100, 16, 101, 82, -27, 85, -113
     };
     
-    private static final String iv = "encryptionIntVec";
-    
-    public static byte[] createPassphrase(char[] password) {
+    public static byte[] createKey(char[] password) {
         try {
-            KeySpec spec = new PBEKeySpec(password, salt, 10000, 256);;
-            SecretKeyFactory keyFactory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
+            KeySpec spec = new PBEKeySpec(password, SALT, 10000, 256);
+            SecretKeyFactory keyFactory = SecretKeyFactory.getInstance(SECRET_KEY_ALGORITHM);
             
             byte[] key = keyFactory.generateSecret(spec).getEncoded();
             
@@ -32,40 +39,38 @@ public class AESUtils {
         
         return null;        
     }
-    
-    public static String encrypt(byte[] passphrase, String message) {
+
+    public static String encrypt(String message, byte[] key) {
         try {
-            Key aesKey = new SecretKeySpec(passphrase, "AES");
+            SecretKeySpec secretKey = new SecretKeySpec(key, AES_ALGORITHM);
             
-            Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-            cipher.init(Cipher.ENCRYPT_MODE, aesKey);
+            AlgorithmParameterSpec ivParameterSpec = new IvParameterSpec(IV);
             
-            byte[] encryptedKeyBytes = cipher.doFinal(message.getBytes());
+            Cipher cipher = Cipher.getInstance(AES_TRANSFORMATION);
+            cipher.init(Cipher.ENCRYPT_MODE, secretKey, ivParameterSpec);
             
-            String encryptedMessage = BinaryUtils.toString(encryptedKeyBytes);
+            byte[] encryptedBytes = cipher.doFinal(message.getBytes(StandardCharsets.UTF_8));
             
-            return encryptedMessage;
+            return BinaryUtils.toString(encryptedBytes);
         } catch (Exception ex) {
             Logger.getLogger(AESUtils.class.getName()).log(Level.SEVERE, null, ex);
         }
         
         return null;
     }
-    
-    public static String decrypt(byte[] passphrase, String encryptedMessage) {
+
+    public static String decrypt(String ciphertext, byte[] key) {
         try {
-            Key aesKey = new SecretKeySpec(passphrase, "AES");
+            SecretKeySpec secretKey = new SecretKeySpec(key, AES_ALGORITHM);
             
-            Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-            cipher.init(Cipher.DECRYPT_MODE, aesKey);
+            AlgorithmParameterSpec ivParameterSpec = new IvParameterSpec(IV);
             
-            byte[] encryptedMessageBytes = BinaryUtils.toByteArray(encryptedMessage);
+            Cipher cipher = Cipher.getInstance(AES_TRANSFORMATION);
+            cipher.init(Cipher.DECRYPT_MODE, secretKey, ivParameterSpec);
             
-            byte[] encryptedKeyBytes = cipher.doFinal(encryptedMessageBytes);
+            byte[] decryptedBytes = cipher.doFinal(Base64.getDecoder().decode(ciphertext));
             
-            String message = BinaryUtils.toString(encryptedKeyBytes);
-            
-            return message;
+            return new String(decryptedBytes, StandardCharsets.UTF_8);
         } catch (Exception ex) {
             Logger.getLogger(AESUtils.class.getName()).log(Level.SEVERE, null, ex);
         }

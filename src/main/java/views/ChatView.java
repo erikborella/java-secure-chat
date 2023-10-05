@@ -16,15 +16,18 @@ import javax.swing.text.PlainDocument;
 import javax.swing.text.html.HTMLDocument;
 import multicast.Receiver;
 import multicast.Sender;
-import utils.JsonableMessage;
+import domain.JsonableMessage;
+import domain.MulticastConnection;
 
 /**
  *
  * @author erik0
  */
 public class ChatView extends javax.swing.JFrame {
-    private String address = "230.0.0.0";
-    private int port = 50000;
+    private String address;
+    private int port;
+    
+    private String key;
     
     private String username;
     
@@ -35,9 +38,13 @@ public class ChatView extends javax.swing.JFrame {
         initComponents();
     }
     
-    public ChatView(String username) {
+    public ChatView(String username, MulticastConnection connectionInfo) {
         initComponents();
         this.username = username;
+        
+        this.address = connectionInfo.address;
+        this.port = connectionInfo.port;
+        this.key = connectionInfo.key;
         
         initMulticast();
        
@@ -46,8 +53,8 @@ public class ChatView extends javax.swing.JFrame {
 
     private void initMulticast() {
         try {
-            this.sender = new Sender(address, port);
-            this.receiver = new Receiver(address, port);
+            this.sender = new Sender(address, port, key);
+            this.receiver = new Receiver(address, port, key);
         } catch (Exception e) {
             showException(e);
         }

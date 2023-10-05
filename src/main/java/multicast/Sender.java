@@ -5,6 +5,8 @@
  */
 package multicast;
 
+import crypto.AESUtils;
+import crypto.BinaryUtils;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -16,16 +18,21 @@ public class Sender {
     private final DatagramSocket socket;
     private final InetAddress groupAddress;
     private final int port;
+    
+    private final byte[] key;
 
-    public Sender(String address, int port) 
+    public Sender(String address, int port, String key) 
             throws UnknownHostException, SocketException{
         this.socket = new DatagramSocket();
         this.groupAddress = InetAddress.getByName(address);
         this.port = port;
+        this.key = BinaryUtils.toByteArray(key);
     }
     
     public void send(String message) throws IOException{
-        byte[] buf = message.getBytes();
+        String encryptedMessage = AESUtils.encrypt(message, this.key);
+        
+        byte[] buf = encryptedMessage.getBytes();
         
         DatagramPacket packet = new DatagramPacket(buf, buf.length, 
                 groupAddress, port);

@@ -19,7 +19,8 @@ import javax.crypto.spec.PBEKeySpec;
 import javax.swing.JDialog;
 import javax.swing.JOptionPane;
 import tcp.TCPClient;
-import utils.JsonableMessage;
+import domain.JsonableMessage;
+import domain.MulticastConnection;
 
 /**
  *
@@ -145,7 +146,7 @@ public class InitialView extends javax.swing.JFrame {
             return;
         }
         
-        this.initChatView(pemKeyPair);
+        this.initChatView(id, pemKeyPair);
 
 //        String username = usernameTextField.getText();
 //        
@@ -161,22 +162,33 @@ public class InitialView extends javax.swing.JFrame {
         
         KeyPair pemKeyPair = RSAManager.createNewPEM(id, password);
         
-        this.initChatView(pemKeyPair);
+        this.initChatView(id, pemKeyPair);
     }//GEN-LAST:event_createButtonActionPerformed
 
-    private void initChatView(KeyPair pemKeyPair) {
-        this.getMulticastInfo(pemKeyPair);
+    private void initChatView(String username, KeyPair pemKeyPair) {
+        MulticastConnection connectionInfo = this.getMulticastInfo(pemKeyPair);
+        
+        ChatView chatView = new ChatView(username, connectionInfo);
+        
+        this.dispose();
+        chatView.setVisible(true);
     }
     
-    private void getMulticastInfo(KeyPair pemKeyPair) {
+    private MulticastConnection getMulticastInfo(KeyPair pemKeyPair) {
         TCPClient client = new TCPClient(KEY_SERVER_ADDRESS, KEY_SERVER_PORT);
         String message = RSAUtils.createPublicKeyPEM(pemKeyPair.getPublic());
         
-        String encResponse = client.send(message);
-        System.out.println(encResponse);
+        String encryptedResponse = client.send(message);
         
-        String m = RSAUtils.decrypt(pemKeyPair.getPrivate(), encResponse);
-        System.out.println(m);
+        String response = RSAUtils.decrypt(pemKeyPair.getPrivate(), encryptedResponse);
+        
+        String[] responseValues = response.split("\n");
+        
+        String address = responseValues[0];
+        int port = Integer.parseInt(responseValues[1]);
+        String key = responseValues[2];
+        
+        return new MulticastConnection(address, port, key);
     }
     
     /**

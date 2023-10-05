@@ -1,5 +1,7 @@
 package multicast;
 
+import crypto.AESUtils;
+import crypto.BinaryUtils;
 import interfaces.ICallback;
 import interfaces.ICallbackException;
 import java.io.IOException;
@@ -10,6 +12,8 @@ import java.net.MulticastSocket;
 public class Receiver {
     private final MulticastSocket socket;
     private final InetAddress groupAddress;
+    
+    private final byte[] key;
     
     private byte[] buf = new byte[5000];
         
@@ -34,8 +38,10 @@ public class Receiver {
                     String received = new String(
                         packet.getData(), 0, packet.getLength()
                     );
+                    
+                    String decryptedReceived = AESUtils.decrypt(received, key);
 
-                    callback.run(received);
+                    callback.run(decryptedReceived);
                 } catch (Exception e) {
                     callbackException.run(e);
                 }
@@ -44,10 +50,12 @@ public class Receiver {
         
     }
 
-    public Receiver(String address, int port) 
+    public Receiver(String address, int port, String key) 
             throws IOException{
         this.socket = new MulticastSocket(port);
         this.groupAddress = InetAddress.getByName(address);
+        
+        this.key = BinaryUtils.toByteArray(key);
         
         socket.joinGroup(groupAddress);
     }

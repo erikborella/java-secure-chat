@@ -43,7 +43,7 @@ public class RSAUtils {
     
     public static byte[] createPassphrase(char[] password) {
         try {
-            KeySpec spec = new PBEKeySpec(password, salt, 1000000, 256);;
+            KeySpec spec = new PBEKeySpec(password, salt, 10000, 256);;
             SecretKeyFactory keyFactory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
             
             byte[] key = keyFactory.generateSecret(spec).getEncoded();
